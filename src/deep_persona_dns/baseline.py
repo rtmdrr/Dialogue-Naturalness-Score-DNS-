@@ -119,6 +119,18 @@ def fit_baseline(
             f"need at least 2 complete baseline dialogues, got {profiles.shape[0]}"
         )
 
+    spread = profiles.std(axis=0, ddof=1)
+    if np.all(spread < 1e-12):
+        # Every dialogue has the same profile, so the reference distribution is
+        # a point. Every distance would be zero and every dialogue would score
+        # a perfect 1, which is worse than an error because it looks like an
+        # answer. A single component with no variance is fine and is handled by
+        # the estimators below.
+        raise ValueError(
+            "the baseline profiles show no variation, so every dialogue would "
+            "score identically; fit on a corpus of distinct human dialogues"
+        )
+
     mean = profiles.mean(axis=0)
 
     if estimator == "empirical":

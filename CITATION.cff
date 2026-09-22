@@ -1,0 +1,79 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "deep-persona-dns: reference implementation of the Dialogue Naturalness Score"
+abstract: >-
+  A reference-free metric for how far an agent's dialogue departs from human
+  conversational behaviour. Computes a behavioural profile over an agent's
+  turns, compares it with the same profile over a corpus of human dialogue by
+  Mahalanobis distance, and reports both a naturalness score and a chi-squared
+  test of whether the dialogue is distinguishable from the human baseline.
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/OWNER/deep-persona-dns"
+keywords:
+  - dialogue evaluation
+  - naturalness
+  - role-playing agents
+  - persona
+  - natural language processing
+authors:
+  - family-names: Dror
+    given-names: Rotem
+  - family-names: Elyoseph
+    given-names: Zohar
+  - family-names: Haber
+    given-names: Yuval
+  - family-names: Refoua
+    given-names: Elad
+  - family-names: Ayalon
+    given-names: Oshrat
+  - family-names: Solomon
+    given-names: Adir
+preferred-citation:
+  type: article
+  title: >-
+    Deep Persona: A Psychologically Grounded Architecture and Evaluation
+    Framework for Role-Playing Agents and Simulations
+  year: 2026
+  journal: "arXiv preprint arXiv:2609.22255"
+  url: "https://arxiv.org/abs/2609.22255"
+  authors:
+    - family-names: Dror
+      given-names: Rotem
+    - family-names: Elyoseph
+      given-names: Zohar
+    - family-names: Haber
+      given-names: Yuval
+    - family-names: Refoua
+      given-names: Elad
+    - family-names: Ayalon
+      given-names: Oshrat
+    - family-names: Solomon
+      given-names: Adir
+references:
+  - type: article
+    title: "Crowdsourcing a Word-Emotion Association Lexicon"
+    year: 2013
+    journal: "Computational Intelligence"
+    volume: 29
+    issue: 3
+    authors:
+      - family-names: Mohammad
+        given-names: "Saif M."
+      - family-names: Turney
+        given-names: "Peter D."
+    notes: "The default English emotion lexicon."
+  - type: conference-paper
+    title: "Hebrew Psychological Lexicons"
+    year: 2021
+    collection-title: >-
+      Proceedings of the Seventh Workshop on Computational Linguistics and
+      Clinical Psychology
+    url: "https://aclanthology.org/2021.clpsych-1.6"
+    authors:
+      - family-names: Shapira
+        given-names: Natalie
+      - name: "the Hebrew Psychological Lexicons contributors"
+    notes: >-
+      The default Hebrew emotion lexicon, distributed under CC BY-SA 4.0 and
+      read from the hepsylex package rather than redistributed here.

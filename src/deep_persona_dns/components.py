@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Sequence, Set
+from typing import List, Optional, Sequence, Set
 
+import numpy as np
+
+from .emotion import EmotionVectorizer, is_near_uniform
 from .entities import EntityExtractor
 from .turns import (
     SplitTurn,
@@ -343,4 +346,106 @@ def emotional_expression_score(
         emotion_diversity=float(emotion_diversity),
         intensity_diversity=float(intensity_diversity),
         n_turns=n,
+    )
+
+
+#: Similarity measures available for comparing two emotion vectors.
+CONGRUENCE_SIMILARITIES = ("cosine", "pearson")
+
+
+@dataclass(frozen=True)
+class AffectiveCongruenceScore:
+    """Affective congruence between speech and nonverbal action.
+
+    Attributes:
+        score: mean similarity over the scored pairs, or None when the
+            dialogue contains no nonverbal actions to compare against.
+        n_pairs: how many verbal-action pairs the dialogue contained.
+        n_scored: how many of them were scored.
+        n_uninformative: how many were set aside because the emotion model
+            returned a near-uniform vector for one side or the other.
+    """
+
+    score: Optional[float]
+    n_pairs: int
+    n_scored: int
+    n_uninformative: int
+
+
+def _cosine(a: np.ndarray, b: np.ndarray) -> float:
+    denominator = float(np.linalg.norm(a) * np.linalg.norm(b))
+    return float(np.dot(a, b) / denominator) if denominator else 0.0
+
+
+def _pearson(a: np.ndarray, b: np.ndarray) -> float:
+    return _cosine(a - a.mean(), b - b.mean())
+
+
+def affective_congruence_score(
+    turns: Sequence[SplitTurn],
+    vectorizer: "EmotionVectorizer",
+    *,
+    similarity: str = "cosine",
+    skip_uninformative: bool = True,
+    uniform_tolerance: float = 1e-3,
+) -> AffectiveCongruenceScore:
+    """Score the alignment between what the agent says and what it does.
+
+    Each bracketed action in an agent response is paired with the verbal
+    content of that same response. Both sides are embedded in the emotion
+    space and compared, and the component is the mean similarity over pairs.
+    A response stating "I am fine" while described as trembling scores low.
+
+    Args:
+        turns: the dialogue, already split.
+        vectorizer: maps text to emotion probability vectors.
+        similarity: ``"cosine"`` or ``"pearson"``.
+        skip_uninformative: set aside pairs for which the model returned a
+            near-uniform vector on either side, since their similarity
+            reflects the model having found nothing rather than the two sides
+            agreeing. The count is reported either way.
+        uniform_tolerance: how flat a vector must be to count as uninformative.
+
+    Returns:
+        An :class:`AffectiveCongruenceScore`. Its ``score`` is None when there
+        was nothing to compare, which is the normal case for transcripts
+        without nonverbal annotation.
+    """
+    if similarity not in CONGRUENCE_SIMILARITIES:
+        raise ValueError(
+            f"similarity must be one of {CONGRUENCE_SIMILARITIES}, got {similarity!r}"
+        )
+
+    verbal_side: List[str] = []
+    action_side: List[str] = []
+    for turn in turns:
+        for action in turn.actions:
+            verbal_side.append(turn.verbal or "")
+            action_side.append(action)
+
+    n_pairs = len(action_side)
+    if not n_pairs:
+        return AffectiveCongruenceScore(None, 0, 0, 0)
+
+    verbal_vectors = np.asarray(vectorizer.encode(verbal_side), dtype=float)
+    action_vectors = np.asarray(vectorizer.encode(action_side), dtype=float)
+
+    compare = _cosine if similarity == "cosine" else _pearson
+    similarities: List[float] = []
+    uninformative = 0
+    for verbal_vector, action_vector in zip(verbal_vectors, action_vectors):
+        if skip_uninformative and (
+            is_near_uniform(verbal_vector, uniform_tolerance)
+            or is_near_uniform(action_vector, uniform_tolerance)
+        ):
+            uninformative += 1
+            continue
+        similarities.append(compare(verbal_vector, action_vector))
+
+    score = float(np.mean(similarities)) if similarities else None
+    return AffectiveCongruenceScore(
+        score=score,
+        n_pairs=n_pairs,
+        n_scored=len(similarities),
+        n_uninformative=uninformative,
     )

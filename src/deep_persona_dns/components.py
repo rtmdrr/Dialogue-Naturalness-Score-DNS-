@@ -7,7 +7,14 @@ from dataclasses import dataclass
 from typing import List, Sequence, Set
 
 from .entities import EntityExtractor
-from .turns import SplitTurn, jaccard, normalize_text, rouge_l, safe_divide
+from .turns import (
+    SplitTurn,
+    jaccard,
+    normalize_text,
+    rouge_l,
+    safe_divide,
+    tokenize,
+)
 
 #: Similarity measures available for user-agent overlap.
 OVERLAP_MEASURES = ("rouge_l", "jaccard")
@@ -217,4 +224,123 @@ def joint_attention_score(
         score=float(safe_divide(acknowledged, new_turns)),
         n_new_turns=new_turns,
         n_acknowledged=acknowledged,
+    )
+
+
+#: How emotion and intensity terms are counted across a dialogue.
+#:
+#: ``"per_turn"`` follows the definition in the paper: each turn contributes
+#: the number of matching tokens it contains, and the counts are averaged over
+#: turns. A word used in five turns counts five times.
+#: ``"distinct"`` instead counts how many different terms the dialogue uses at
+#: all, divided by its length, reading the component as lexical range rather
+#: than affective density. A word used in five turns counts once.
+EMOTION_COUNTING = ("per_turn", "distinct")
+
+#: How intensity modifiers are attributed to a turn.
+#:
+#: ``"adjacent"`` follows the definition in the paper: a modifier counts only
+#: when it falls within ``intensity_window`` tokens of an emotion term.
+#: ``"turn"`` counts every modifier in the turn regardless of position.
+INTENSITY_SCOPES = ("adjacent", "turn")
+
+
+@dataclass(frozen=True)
+class EmotionalExpressionScore:
+    """Emotional expression diversity and intensity.
+
+    Attributes:
+        score: the weighted combination of the two diversities.
+        emotion_diversity: emotion terms, per turn.
+        intensity_diversity: intensity modifiers, per turn.
+        n_turns: dialogue length, the denominator of both.
+    """
+
+    score: float
+    emotion_diversity: float
+    intensity_diversity: float
+    n_turns: int
+
+
+def _near_emotion(tokens: Sequence[str], index: int, emotion_positions: Set[int],
+                  window: int) -> bool:
+    return any(abs(index - position) <= window for position in emotion_positions)
+
+
+def emotional_expression_score(
+    turns: Sequence[SplitTurn],
+    emotion_lexicon: Set[str],
+    intensifiers: Set[str],
+    *,
+    emotion_weight: float = 0.7,
+    intensity_weight: float = 0.3,
+    counting: str = "per_turn",
+    intensity_scope: str = "adjacent",
+    intensity_window: int = 3,
+) -> EmotionalExpressionScore:
+    """Score the range and modulation of the agent's affective vocabulary.
+
+    Args:
+        turns: the dialogue, already split.
+        emotion_lexicon: lowercase emotion-bearing word forms.
+        intensifiers: lowercase intensity modifiers.
+        emotion_weight, intensity_weight: weights of the two diversities. They
+            must sum to 1.
+        counting: how terms are counted, see :data:`EMOTION_COUNTING`.
+        intensity_scope: how modifiers are attributed, see
+            :data:`INTENSITY_SCOPES`.
+        intensity_window: tokens either side of an emotion term that count as
+            adjacent, used only when ``intensity_scope`` is ``"adjacent"``.
+
+    Returns:
+        An :class:`EmotionalExpressionScore`, higher being more expressive.
+    """
+    if not turns:
+        raise ValueError("cannot score an empty dialogue")
+    if abs(emotion_weight + intensity_weight - 1.0) > 1e-6:
+        raise ValueError("emotion_weight and intensity_weight must sum to 1.0")
+    if counting not in EMOTION_COUNTING:
+        raise ValueError(f"counting must be one of {EMOTION_COUNTING}, got {counting!r}")
+    if intensity_scope not in INTENSITY_SCOPES:
+        raise ValueError(
+            f"intensity_scope must be one of {INTENSITY_SCOPES}, got {intensity_scope!r}"
+        )
+
+    emotion_total = 0
+    intensity_total = 0
+    emotion_seen: Set[str] = set()
+    intensity_seen: Set[str] = set()
+
+    for turn in turns:
+        tokens = tokenize(turn.verbal or "")
+        emotion_positions = {i for i, tok in enumerate(tokens) if tok in emotion_lexicon}
+
+        for position in emotion_positions:
+            emotion_seen.add(tokens[position])
+        emotion_total += len(emotion_positions)
+
+        for index, token in enumerate(tokens):
+            if token not in intensifiers:
+                continue
+            if intensity_scope == "adjacent" and not _near_emotion(
+                tokens, index, emotion_positions, intensity_window
+            ):
+                continue
+            intensity_total += 1
+            intensity_seen.add(token)
+
+    n = len(turns)
+    if counting == "per_turn":
+        emotion_diversity = safe_divide(emotion_total, n)
+        intensity_diversity = safe_divide(intensity_total, n)
+    else:
+        emotion_diversity = safe_divide(len(emotion_seen), n)
+        intensity_diversity = safe_divide(len(intensity_seen), n)
+
+    score = emotion_weight * emotion_diversity + intensity_weight * intensity_diversity
+    return EmotionalExpressionScore(
+        score=float(score),
+        emotion_diversity=float(emotion_diversity),
+        intensity_diversity=float(intensity_diversity),
+        n_turns=n,
     )

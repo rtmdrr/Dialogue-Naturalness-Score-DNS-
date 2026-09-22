@@ -2,13 +2,25 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List, Sequence, Set
 
-from .turns import SplitTurn, jaccard, rouge_l, safe_divide
+from .entities import EntityExtractor
+from .turns import SplitTurn, jaccard, normalize_text, rouge_l, safe_divide
 
 #: Similarity measures available for user-agent overlap.
 OVERLAP_MEASURES = ("rouge_l", "jaccard")
+
+#: Where an entity may be acknowledged for the turn to count.
+#:
+#: ``"next"`` follows the definition in the paper: the entity must appear in
+#: the agent response after the one in which the user introduced it.
+#: ``"current_or_next"`` also accepts acknowledgement in the immediate
+#: response, on the view that answering at once is no worse than answering a
+#: turn later. The second is the more permissive of the two and will not score
+#: any dialogue lower than the first.
+ACKNOWLEDGEMENT_WINDOWS = ("next", "current_or_next")
 
 
 @dataclass(frozen=True)
@@ -117,4 +129,92 @@ def pragmatic_score(
         self_repetition=float(mean_self_repetition),
         echolalia_rate=float(echolalia_rate),
         n_turns=n,
+    )
+
+
+@dataclass(frozen=True)
+class JointAttentionScore:
+    """Joint attention capability.
+
+    Attributes:
+        score: the proportion of turns introducing a new entity in which the
+            agent went on to reference one of them. Zero when the dialogue
+            introduces nothing new, which is also reported by ``n_new_turns``.
+        n_new_turns: how many turns introduced at least one new entity.
+        n_acknowledged: how many of those were acknowledged.
+    """
+
+    score: float
+    n_new_turns: int
+    n_acknowledged: int
+
+
+def _references(entities: Set[str], text: str) -> bool:
+    """Whether any entity appears in the text, whole or by its head word."""
+    haystack = normalize_text(text)
+    if not haystack:
+        return False
+    for entity in entities:
+        entity = normalize_text(entity).strip()
+        if not entity:
+            continue
+        if entity in haystack:
+            return True
+        head = entity.split()[-1]
+        if len(head) >= 2 and re.search(rf"(?<!\w){re.escape(head)}(?!\w)", haystack):
+            return True
+    return False
+
+
+def joint_attention_score(
+    turns: Sequence[SplitTurn],
+    extractor: EntityExtractor,
+    *,
+    acknowledgement_window: str = "next",
+) -> JointAttentionScore:
+    """Score how reliably the agent takes up what the user introduces.
+
+    For every turn in which the user mentions an entity not seen earlier in the
+    dialogue, the agent is credited if it references one of those entities.
+
+    Args:
+        turns: the dialogue, already split.
+        extractor: identifies the entities in a user utterance.
+        acknowledgement_window: which agent responses may carry the
+            acknowledgement, see :data:`ACKNOWLEDGEMENT_WINDOWS`.
+
+    Returns:
+        A :class:`JointAttentionScore`, higher being more attentive.
+    """
+    if acknowledgement_window not in ACKNOWLEDGEMENT_WINDOWS:
+        raise ValueError(
+            f"acknowledgement_window must be one of {ACKNOWLEDGEMENT_WINDOWS}, "
+            f"got {acknowledgement_window!r}"
+        )
+
+    seen: Set[str] = set()
+    new_turns = 0
+    acknowledged = 0
+
+    for index, turn in enumerate(turns):
+        introduced = extractor.extract(turn.user) - seen
+        if not introduced:
+            continue
+
+        new_turns += 1
+        candidates = []
+        if acknowledgement_window == "current_or_next":
+            candidates.append(turn.verbal)
+        if index + 1 < len(turns):
+            candidates.append(turns[index + 1].verbal)
+
+        if any(_references(introduced, text or "") for text in candidates):
+            acknowledged += 1
+
+        seen |= introduced
+
+    return JointAttentionScore(
+        score=float(safe_divide(acknowledged, new_turns)),
+        n_new_turns=new_turns,
+        n_acknowledged=acknowledged,
     )

@@ -52,14 +52,14 @@ def load_nrc_english() -> Set[str]:
 
     Every word carrying at least one emotion or sentiment tag is included.
 
-    Requires the ``nrclex`` package: ``pip install deep-persona-dns[english]``.
+    Requires the ``nrclex`` package, installed by the ``english`` extra.
     """
     try:
         import nrclex
     except ImportError as exc:  # pragma: no cover - depends on the environment
         raise ImportError(
-            "load_nrc_english() requires the nrclex package. Install it with "
-            "'pip install deep-persona-dns[english]', or supply your own "
+            "load_nrc_english() requires the nrclex package, which the 'english' "
+            "extra installs; see the README. Alternatively supply your own "
             "lexicon with load_from_file()."
         ) from exc
 
@@ -75,15 +75,15 @@ def load_hebrew_psychological() -> Set[str]:
     returned. The lexicon is distributed under CC BY-SA 4.0 and should be cited
     as Shapira et al., CLPsych 2021.
 
-    Requires the ``hepsylex`` package: ``pip install deep-persona-dns[hebrew]``.
+    Requires the ``hepsylex`` package, installed by the ``hebrew`` extra.
     """
     try:
         from hepsylex import Lexicons
     except ImportError as exc:  # pragma: no cover - depends on the environment
         raise ImportError(
-            "load_hebrew_psychological() requires the hepsylex package. Install "
-            "it with 'pip install deep-persona-dns[hebrew]', or supply your own "
-            "lexicon with load_from_file()."
+            "load_hebrew_psychological() requires the hepsylex package, which the "
+            "'hebrew' extra installs; see the README. Alternatively supply your "
+            "own lexicon with load_from_file()."
         ) from exc
 
     lexicons = Lexicons()

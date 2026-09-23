@@ -9,7 +9,7 @@ abstract: >-
   test of whether the dialogue is distinguishable from the human baseline.
 version: 0.1.0
 license: MIT
-repository-code: "https://github.com/OWNER/deep-persona-dns"
+repository-code: "https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-"
 keywords:
   - dialogue evaluation
   - naturalness

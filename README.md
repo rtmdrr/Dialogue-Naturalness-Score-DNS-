@@ -18,16 +18,27 @@ Agents and Simulations* ([arXiv:2609.22255](https://arxiv.org/abs/2609.22255)).
 ## Install
 
 ```bash
-pip install deep-persona-dns
+pip install git+https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-
 ```
 
 The core install computes the lexicon-based components and the whole scoring
 layer. The backends that need models are optional extras:
 
 ```bash
-pip install "deep-persona-dns[english]"     # spaCy entities, NRC lexicon
-pip install "deep-persona-dns[hebrew]"      # Hebrew lexicon, Hebrew NER
-pip install "deep-persona-dns[congruence]"  # emotion classifier
+REPO=git+https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-
+
+pip install "deep-persona-dns[english] @ $REPO"     # spaCy entities, NRC lexicon
+pip install "deep-persona-dns[hebrew] @ $REPO"      # Hebrew lexicon, Hebrew NER
+pip install "deep-persona-dns[congruence] @ $REPO"  # emotion classifier
+```
+
+Or clone and install in place, which is the easier route if you want the tests
+and the worked example:
+
+```bash
+git clone https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-
+cd Dialogue-Naturalness-Score-DNS-
+pip install -e ".[english]"
 ```
 
 For English you will also need a spaCy model:

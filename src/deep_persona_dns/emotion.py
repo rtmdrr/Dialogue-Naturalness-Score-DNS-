@@ -62,7 +62,7 @@ class TransformerEmotionVectorizer:
     logistic function for a multi-label one, following the model's own
     ``problem_type``.
 
-    Requires transformers: ``pip install deep-persona-dns[congruence]``.
+    Requires ``transformers``, installed by the ``congruence`` extra.
     """
 
     def __init__(
@@ -78,8 +78,8 @@ class TransformerEmotionVectorizer:
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
         except ImportError as exc:  # pragma: no cover - depends on the environment
             raise ImportError(
-                "TransformerEmotionVectorizer requires transformers and torch. "
-                "Install them with 'pip install deep-persona-dns[congruence]'."
+                "TransformerEmotionVectorizer requires transformers and torch, which "
+                "the 'congruence' extra installs; see the README."
             ) from exc
 
         self._torch = torch
@@ -128,7 +128,7 @@ class EnsembleEmotionVectorizer:
     emotions are given. This is the shape of the Hebrew emotion models, which
     are published as a family of per-emotion classifiers.
 
-    Requires transformers: ``pip install deep-persona-dns[hebrew]``.
+    Requires ``transformers``, installed by the ``hebrew`` extra.
     """
 
     def __init__(
@@ -146,8 +146,8 @@ class EnsembleEmotionVectorizer:
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
         except ImportError as exc:  # pragma: no cover - depends on the environment
             raise ImportError(
-                "EnsembleEmotionVectorizer requires transformers and torch. "
-                "Install them with 'pip install deep-persona-dns[hebrew]'."
+                "EnsembleEmotionVectorizer requires transformers and torch, which the "
+                "'hebrew' extra installs; see the README."
             ) from exc
 
         self._torch = torch

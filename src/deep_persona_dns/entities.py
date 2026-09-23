@@ -52,8 +52,9 @@ class SpacyEntityExtractor:
     Noun chunks are included alongside named entities because a new topic is
     frequently an ordinary noun phrase rather than a name.
 
-    Requires spaCy and a model: ``pip install deep-persona-dns[english]`` and
-    ``python -m spacy download en_core_web_sm``.
+    Requires spaCy, installed by the ``english`` extra, and a spaCy model::
+
+        python -m spacy download en_core_web_sm
     """
 
     def __init__(self, model: str = "en_core_web_sm", *, min_chars: int = MIN_ENTITY_CHARS):
@@ -61,8 +62,8 @@ class SpacyEntityExtractor:
             import spacy
         except ImportError as exc:  # pragma: no cover - depends on the environment
             raise ImportError(
-                "SpacyEntityExtractor requires spaCy. Install it with "
-                "'pip install deep-persona-dns[english]'."
+                "SpacyEntityExtractor requires spaCy, which the 'english' extra "
+                "installs; see the README."
             ) from exc
         self._nlp = spacy.load(model)
         self._min_chars = min_chars
@@ -77,7 +78,7 @@ class SpacyEntityExtractor:
 class TransformerEntityExtractor:
     """Named entities from a token classification pipeline.
 
-    Requires transformers: ``pip install deep-persona-dns[hebrew]``.
+    Requires ``transformers``, installed by the ``hebrew`` extra.
     """
 
     def __init__(
@@ -91,8 +92,8 @@ class TransformerEntityExtractor:
             from transformers import pipeline
         except ImportError as exc:  # pragma: no cover - depends on the environment
             raise ImportError(
-                "TransformerEntityExtractor requires transformers. Install it "
-                "with 'pip install deep-persona-dns[hebrew]'."
+                "TransformerEntityExtractor requires transformers, which the "
+                "'hebrew' extra installs; see the README."
             ) from exc
         if device is None:
             device = _default_device()

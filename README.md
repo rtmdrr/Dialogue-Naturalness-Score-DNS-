@@ -247,6 +247,14 @@ Please also cite whichever lexicon you use.
 
 ---
 
+## Maintainer
+
+Maintained by Rotem Dror ([@rtmdrr](https://github.com/rtmdrr)). For questions,
+bug reports and feature requests, please
+[open an issue](https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-/issues).
+
+---
+
 ## Licence
 
 MIT. See `LICENSE`.

@@ -29,6 +29,10 @@ authors:
     given-names: Oshrat
   - family-names: Solomon
     given-names: Adir
+contact:
+  - family-names: Dror
+    given-names: Rotem
+    alias: rtmdrr
 preferred-citation:
   type: article
   title: >-

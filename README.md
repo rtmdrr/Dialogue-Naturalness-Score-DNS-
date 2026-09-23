@@ -13,6 +13,11 @@ This is the reference implementation for the metric described in *Deep Persona:
 A Psychologically Grounded Architecture and Evaluation Framework for Role-Playing
 Agents and Simulations* ([arXiv:2609.22255](https://arxiv.org/abs/2609.22255)).
 
+**Documentation:** this README covers installation and normal use.
+[`docs/configuration.md`](docs/configuration.md) is the complete reference for
+every option, the covariance estimators, the backends and the command line.
+`examples/quickstart.py` runs the whole flow offline.
+
 ---
 
 ## Install
@@ -149,8 +154,10 @@ inspect the per-component spread before trusting a baseline.
 
 ## Configuration
 
-Defaults reproduce the configuration reported in the paper. Where the metric
-admits more than one reasonable reading, both are available:
+**Every default reproduces the configuration reported in the paper**, so
+nothing needs setting to use the metric as published. Where the metric admits
+more than one reasonable reading, both readings are implemented and the default
+follows the paper.
 
 ```python
 from deep_persona_dns import DNSEvaluator, EvaluatorConfig
@@ -164,6 +171,8 @@ config = EvaluatorConfig(
 )
 ```
 
+The four options most likely to matter:
+
 | option | default | alternative |
 |---|---|---|
 | `acknowledgement_window` | the agent's next turn | also accept the same turn |
@@ -172,10 +181,14 @@ config = EvaluatorConfig(
 | `overlap_measure` | ROUGE-L | Jaccard |
 
 `fit_baseline` takes `estimator="shrinkage"` (default), `"scale_invariant"` or
-`"empirical"`. Shrinkage is well defined where the sample covariance is not.
-The scale-invariant estimator regularises the correlation structure while
-leaving each component's own variance alone, which is worth using when the
-components differ in variance by orders of magnitude.
+`"empirical"`. The scale-invariant estimator is worth trying when the
+components differ in variance by orders of magnitude, which they do here — three
+are bounded in `[0, 1]` and emotional expression is an unbounded rate.
+
+**[`docs/configuration.md`](docs/configuration.md) is the full reference**: all
+fifteen component options, the three covariance estimators and when each one
+matters, degrees of freedom and λ, every backend's constructor, and the
+complete command-line flag list.
 
 ---
 

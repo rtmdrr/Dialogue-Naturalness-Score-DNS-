@@ -240,8 +240,8 @@ def build_parser() -> argparse.ArgumentParser:
     _add_shared(fit)
     fit.add_argument("-o", "--output", required=True, help="where to write the baseline")
     fit.add_argument(
-        "--estimator", default="shrinkage", choices=ESTIMATORS,
-        help="covariance estimator (default: shrinkage)",
+        "--estimator", default="empirical", choices=ESTIMATORS,
+        help="covariance estimator (default: empirical, the sample covariance)",
     )
     fit.set_defaults(func=command_fit_baseline)
 

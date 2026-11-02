@@ -7,7 +7,7 @@ abstract: >-
   turns, compares it with the same profile over a corpus of human dialogue by
   Mahalanobis distance, and reports both a naturalness score and a chi-squared
   test of whether the dialogue is distinguishable from the human baseline.
-version: 0.1.0
+version: 0.2.0
 license: MIT
 repository-code: "https://github.com/rtmdrr/Dialogue-Naturalness-Score-DNS-"
 keywords:

@@ -123,31 +123,37 @@ rather than assuming — it returns
 ## 2. Covariance estimation
 
 ```python
-baseline = fit_baseline(profiles, components, estimator="shrinkage")
+baseline = fit_baseline(profiles, components, estimator="empirical")
 ```
 
 | estimator | behaviour |
 |---|---|
-| `"shrinkage"` *(default)* | Ledoit–Wolf shrinkage of the covariance |
-| `"scale_invariant"` | shrinkage applied to the correlation matrix, per-component variance restored |
-| `"empirical"` | the sample covariance, pseudo-inverted if singular |
+| `"empirical"` *(default)* | the sample covariance, pseudo-inverted if singular |
+| `"scale_invariant"` | Ledoit–Wolf shrinkage of the correlation matrix, per-component variance restored |
+| `"shrinkage"` | Ledoit–Wolf shrinkage of the covariance itself |
 
-**`"shrinkage"`** is well defined where the sample covariance is not, which
-happens readily with a modest baseline or a component that barely varies.
+**`"empirical"`** is the sample covariance of the human profiles, as in the
+paper's definition of the reference distribution. With a few hundred baseline
+dialogues and three or four components it is well conditioned. It becomes
+singular only if a component is constant across the entire baseline, in which
+case the pseudo-inverse is used.
 
-**`"scale_invariant"`** matters when the components differ in variance by
-orders of magnitude. Ledoit–Wolf shrinks toward a scaled identity whose scale
-is the mean eigenvalue, so it is set by the largest-variance components; a
-component whose baseline variance is much smaller has its variance pulled up
-toward that target, which reduces how much it can contribute to `d²`. The
-scale-invariant estimator standardises first, shrinks the correlation matrix —
-which is scale-free — and then restores each component's own standard
-deviation. The correlation structure is still regularised; the relative scale
-of the components is not touched.
+**`"scale_invariant"`** is the regularised option for small baselines. It
+standardises each component, applies Ledoit–Wolf shrinkage to the correlation
+matrix — which is scale-free — and then restores each component's own standard
+deviation. The correlation structure is regularised; the relative scale of the
+components is untouched. On adequately sized baselines it gives results very
+close to `"empirical"`.
 
-Since the components here are on genuinely different scales (three are bounded
-in `[0, 1]`, emotional expression is an unbounded rate), this is worth checking
-on your own baseline. Compare the two fits and see whether the ranking changes.
+**`"shrinkage"`** applies Ledoit–Wolf to the covariance directly. Its target is
+a scaled identity whose scale is the mean eigenvalue, set by the
+largest-variance components, so a component with much smaller variance has its
+variance pulled up toward that scale and contributes little to `d²`. The
+components here are on very different scales — three are bounded in `[0, 1]`,
+emotional expression is an unbounded rate — so this option weakens the
+smaller-scale components substantially and shrinks every distance, which makes
+the χ² test reject far less often. It is provided for comparison; prefer
+`"scale_invariant"` when regularisation is needed.
 
 **`"empirical"`** is the literal reading of the definition and is singular
 whenever a component is constant across the baseline, in which case the
@@ -308,7 +314,7 @@ Shared by both commands:
 | flag | default | meaning |
 |---|---|---|
 | `-o`, `--output` | *required* | where to write the baseline |
-| `--estimator` | `shrinkage` | `shrinkage`, `scale_invariant` or `empirical` |
+| `--estimator` | `empirical` | `empirical`, `scale_invariant` or `shrinkage` |
 
 `score` only:
 
@@ -358,8 +364,8 @@ scores = dns_score(candidate_profiles, baseline)
 ```
 
 Explicitly, that is α = β = γ = 1/3, `echolalia_threshold` 0.65, emotion
-weights 0.7 and 0.3, λ = 0.089 for a three-component profile, Ledoit–Wolf
-shrinkage, ROUGE-L overlap, acknowledgement in the next turn, per-turn emotion
+weights 0.7 and 0.3, λ = 0.089 for a three-component profile, the sample
+covariance, ROUGE-L overlap, acknowledgement in the next turn, per-turn emotion
 counting and adjacent intensity attribution.
 
 The one setting the paper does not fix is the self-repetition window, which is

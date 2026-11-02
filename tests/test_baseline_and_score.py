@@ -132,14 +132,16 @@ def test_lambda_puts_the_half_way_point_on_the_chosen_quantile():
 
 
 def test_lambda_is_derived_from_the_baseline_width(profiles):
-    three = fit_baseline(profiles, COMPONENTS)
-    four = fit_baseline(
-        np.column_stack([profiles, profiles[:, :1]]), COMPONENTS + ["congruence"]
-    )
-    point = np.full(3, 2.0)
-    assert dns_score(point, three)[0] != pytest.approx(
-        dns_score(np.append(point, 2.0), four)[0]
-    )
+    extra = np.random.default_rng(1).normal(0.5, 0.2, (len(profiles), 1))
+    widths = {
+        3: (fit_baseline(profiles, COMPONENTS), profiles[:5]),
+        4: (fit_baseline(np.hstack([profiles, extra]), COMPONENTS + ["congruence"]),
+            np.hstack([profiles, extra])[:5]),
+    }
+    for df, (fitted, points) in widths.items():
+        expected = np.exp(-lambda_for_df(df) * mahalanobis_sq(points, fitted))
+        assert np.allclose(dns_score(points, fitted), expected)
+    assert lambda_for_df(3) != pytest.approx(lambda_for_df(4))
 
 
 def test_an_explicit_lambda_overrides_the_derived_one(baseline, profiles):

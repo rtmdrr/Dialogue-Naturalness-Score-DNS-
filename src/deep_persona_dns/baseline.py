@@ -15,20 +15,21 @@ import numpy as np
 
 #: Available covariance estimators.
 #:
-#: ``"shrinkage"`` applies Ledoit-Wolf shrinkage to the covariance. It is
-#: well defined when the empirical covariance is not, which happens readily
-#: with few baseline dialogues or a component that barely varies.
+#: ``"empirical"`` (default) is the sample covariance of the human profiles,
+#: as in the paper's definition of the reference distribution. It is singular
+#: only when a component is constant across the whole baseline, in which case
+#: the pseudo-inverse is used.
 #:
-#: ``"scale_invariant"`` shrinks the correlation matrix instead and restores
-#: each component's own variance afterwards. It regularises the correlation
-#: structure in the same way while leaving the relative scale of the
-#: components untouched, which matters when their variances differ by orders
-#: of magnitude.
+#: ``"scale_invariant"`` regularises for small baselines: it applies
+#: Ledoit-Wolf shrinkage to the correlation matrix and then restores each
+#: component's own variance, so the components keep their relative scales.
 #:
-#: ``"empirical"`` uses the sample covariance directly. It is the literal
-#: reading of the definition and is singular whenever a component is constant
-#: across the baseline, in which case the pseudo-inverse is used.
-ESTIMATORS = ("shrinkage", "scale_invariant", "empirical")
+#: ``"shrinkage"`` applies Ledoit-Wolf shrinkage to the covariance itself. Its
+#: target gives every component the same variance, so when the components are
+#: on very different scales -- as they are here -- it inflates the variance of
+#: the smaller ones and sharply reduces their weight in the distance. Prefer
+#: ``"scale_invariant"`` when regularisation is needed.
+ESTIMATORS = ("empirical", "scale_invariant", "shrinkage")
 
 
 @dataclass(frozen=True)
@@ -90,7 +91,7 @@ def fit_baseline(
     profiles: np.ndarray,
     components: Sequence[str],
     *,
-    estimator: str = "shrinkage",
+    estimator: str = "empirical",
 ) -> HumanBaseline:
     """Fit the reference distribution to a matrix of human scoring profiles.
 

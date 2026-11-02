@@ -180,10 +180,12 @@ The four options most likely to matter:
 | `intensity_scope` | modifiers near an emotion term | any modifier in the turn |
 | `overlap_measure` | ROUGE-L | Jaccard |
 
-`fit_baseline` takes `estimator="shrinkage"` (default), `"scale_invariant"` or
-`"empirical"`. The scale-invariant estimator is worth trying when the
-components differ in variance by orders of magnitude, which they do here — three
-are bounded in `[0, 1]` and emotional expression is an unbounded rate.
+`fit_baseline` takes `estimator="empirical"` (default, the sample covariance),
+`"scale_invariant"` or `"shrinkage"`. Use `"scale_invariant"` if the baseline
+is small enough to need regularisation. Avoid plain `"shrinkage"` except for
+comparison: the components differ in scale by orders of magnitude — three are
+bounded in `[0, 1]`, emotional expression is an unbounded rate — and shrinking
+toward a common scale sharply reduces the weight of the smaller ones.
 
 **[`docs/configuration.md`](docs/configuration.md) is the full reference**: all
 fifteen component options, the three covariance estimators and when each one
